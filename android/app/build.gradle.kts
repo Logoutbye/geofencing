@@ -23,8 +23,8 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.geofencing"
-        // native_geofence requires API 23+. Set explicitly rather than
-        // trusting flutter.minSdkVersion, since we need to be certain.
+        // You can update the following values to match your application needs.
+        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -40,16 +40,6 @@ android {
     }
 }
 
-// disable_battery_optimization pulls in the old, deprecated Android Support
-// Library (com.android.support:support-compat:27.0.1) instead of AndroidX.
-// Everything else in this project (flutter_local_notifications, etc.) is on
-// AndroidX (androidx.core:core), which defines the same classes — hence the
-// "Duplicate class" build failure. This drops the legacy one entirely; the
-// app doesn't need it since everything else is already on AndroidX.
-configurations.all {
-    exclude(group = "com.android.support", module = "support-compat")
-}
-
 flutter {
     source = "../.."
 }
@@ -57,4 +47,6 @@ flutter {
 dependencies {
     implementation("androidx.multidex:multidex:2.0.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
 }
+

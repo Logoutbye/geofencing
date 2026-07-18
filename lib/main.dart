@@ -56,11 +56,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   StreamSubscription<Position>? _positionSub;
   double? _liveDistanceMeters;
 
+  // Auto-refresh while the screen is open, so a background log entry
+  // written by the geofence callback shows up live instead of only after
+  // you close and reopen the app.
+  Timer? _autoRefreshTimer;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _refresh();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) => _refresh());
   }
 
   @override
@@ -68,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _radiusController.dispose();
     _positionSub?.cancel();
+    _autoRefreshTimer?.cancel();
     super.dispose();
   }
 
@@ -77,17 +84,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _refresh() async {
-    final office = await _storage.getOfficeLocation();
-    final registered =
-        await NativeGeofenceManager.instance.getRegisteredGeofences();
-    final log = await _storage.getLog();
-    if (!mounted) return;
-    setState(() {
-      _office = office;
-      _registered = registered;
-      _log = log;
-    });
-    if (office != null) _startLiveDistanceTracking(office);
+    try {
+      final office = await _storage.getOfficeLocation();
+      final registered =
+          await NativeGeofenceManager.instance.getRegisteredGeofences();
+      final log = await _storage.getLog();
+      if (!mounted) return;
+      setState(() {
+        _office = office;
+        _registered = registered;
+        _log = log;
+      });
+      if (office != null && _positionSub == null) _startLiveDistanceTracking(office);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _statusMessage = 'Refresh error: $e');
+    }
   }
 
   void _startLiveDistanceTracking(OfficeLocation office) {
@@ -97,17 +109,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         accuracy: LocationAccuracy.high,
         distanceFilter: 1,
       ),
-    ).listen((position) {
-      if (!mounted) return;
-      setState(() {
-        _liveDistanceMeters = Geolocator.distanceBetween(
-          position.latitude,
-          position.longitude,
-          office.latitude,
-          office.longitude,
-        );
-      });
-    });
+    ).listen(
+      (position) {
+        if (!mounted) return;
+        setState(() {
+          _liveDistanceMeters = Geolocator.distanceBetween(
+            position.latitude,
+            position.longitude,
+            office.latitude,
+            office.longitude,
+          );
+        });
+      },
+      onError: (Object e) {
+        if (!mounted) return;
+        setState(() => _statusMessage = 'Live distance stream error: $e');
+      },
+    );
   }
 
   Future<bool> _ensurePermissions() async {
