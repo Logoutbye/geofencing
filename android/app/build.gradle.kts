@@ -25,7 +25,7 @@ android {
         applicationId = "com.example.geofencing"
         // native_geofence requires API 23+. Set explicitly rather than
         // trusting flutter.minSdkVersion, since we need to be certain.
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

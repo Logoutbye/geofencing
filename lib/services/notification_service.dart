@@ -21,18 +21,16 @@ class NotificationService {
 
     await _plugin.initialize(settings: settings);
 
-    // Android 13+ requires the notification permission to be requested
-    // explicitly. Harmless no-op on older versions / iOS.
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
+    // NOTE: deliberately NOT calling requestNotificationsPermission() here.
+    // That call requires a live Android Activity, which does not exist in
+    // the background isolate native_geofence uses for the geofence
+    // callback — calling it there throws a NullPointerException
+    // ("Context.getSystemService on a null object reference") and crashes
+    // before the actual notification .show() call is ever reached.
+    // Permission requesting is handled once, correctly, in the foreground
+    // via permission_handler's Permission.notification.request() in
+    // main.dart's _ensurePermissions(). init() here only sets up the
+    // plugin/channel, which is safe to do from any isolate.
 
     _initialized = true;
   }

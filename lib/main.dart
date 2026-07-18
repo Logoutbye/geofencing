@@ -78,8 +78,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _refresh() async {
     final office = await _storage.getOfficeLocation();
-    final registered = await NativeGeofenceManager.instance
-        .getRegisteredGeofences();
+    final registered =
+        await NativeGeofenceManager.instance.getRegisteredGeofences();
     final log = await _storage.getLog();
     if (!mounted) return;
     setState(() {
@@ -92,23 +92,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _startLiveDistanceTracking(OfficeLocation office) {
     _positionSub?.cancel();
-    _positionSub =
-        Geolocator.getPositionStream(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-            distanceFilter: 1,
-          ),
-        ).listen((position) {
-          if (!mounted) return;
-          setState(() {
-            _liveDistanceMeters = Geolocator.distanceBetween(
-              position.latitude,
-              position.longitude,
-              office.latitude,
-              office.longitude,
-            );
-          });
-        });
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 1,
+      ),
+    ).listen((position) {
+      if (!mounted) return;
+      setState(() {
+        _liveDistanceMeters = Geolocator.distanceBetween(
+          position.latitude,
+          position.longitude,
+          office.latitude,
+          office.longitude,
+        );
+      });
+    });
   }
 
   Future<bool> _ensurePermissions() async {
@@ -119,11 +118,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
     final always = await Permission.locationAlways.request();
     if (!always.isGranted) {
-      setState(
-        () => _statusMessage =
-            'Background ("Allow all the time") location permission is required '
-            'for the geofence to trigger while the app is closed.',
-      );
+      setState(() => _statusMessage =
+          'Background ("Allow all the time") location permission is required '
+          'for the geofence to trigger while the app is closed.');
       return false;
     }
     await Permission.notification.request();
@@ -142,9 +139,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(
-          () => _statusMessage = 'Please turn on device location services.',
-        );
+        setState(() => _statusMessage = 'Please turn on device location services.');
         return;
       }
 
@@ -153,9 +148,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
 
       final parsedRadius = double.tryParse(_radiusController.text.trim());
-      final radius = (parsedRadius == null || parsedRadius < 10)
-          ? 20.0
-          : parsedRadius;
+      final radius = (parsedRadius == null || parsedRadius < 10) ? 20.0 : parsedRadius;
 
       final office = OfficeLocation(
         name: 'Office',
@@ -169,10 +162,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       final geofence = Geofence(
         id: OfficeLocation.geofenceId,
-        location: Location(
-          latitude: office.latitude,
-          longitude: office.longitude,
-        ),
+        location: Location(latitude: office.latitude, longitude: office.longitude),
         radiusMeters: office.radiusMeters,
         triggers: const {GeofenceEvent.enter, GeofenceEvent.exit},
         androidSettings: const AndroidGeofenceSettings(
@@ -182,20 +172,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         iosSettings: const IosGeofenceSettings(),
       );
 
-      await NativeGeofenceManager.instance.createGeofence(
-        geofence,
-        geofenceTriggered,
-      );
+      await NativeGeofenceManager.instance.createGeofence(geofence, geofenceTriggered);
 
-      setState(
-        () =>
-            _statusMessage = 'Saved and registered. You can close the app now.',
-      );
+      setState(() => _statusMessage =
+          'Saved and registered. You can close the app now.');
       await _refresh();
     } on NativeGeofenceException catch (e) {
-      setState(
-        () => _statusMessage = 'Geofence error: ${e.code} ${e.message ?? ''}',
-      );
+      setState(() => _statusMessage = 'Geofence error: ${e.code} ${e.message ?? ''}');
     } catch (e) {
       setState(() => _statusMessage = 'Failed to set location: $e');
     } finally {
@@ -205,9 +188,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final isRegistered = _registered.any(
-      (g) => g.id == OfficeLocation.geofenceId,
-    );
+    final isRegistered = _registered.any((g) => g.id == OfficeLocation.geofenceId);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Geofence PoC')),
@@ -222,20 +203,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Set your location',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                    Text('Set your location',
+                        style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Stand at the spot, set a radius, tap the button.',
-                    ),
+                    const Text('Stand at the spot, set a radius, tap the button.'),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _radiusController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: false,
-                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: false),
                       decoration: const InputDecoration(
                         labelText: 'Radius (meters)',
                         border: OutlineInputBorder(),
@@ -261,12 +236,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                     if (_statusMessage != null) ...[
                       const SizedBox(height: 12),
-                      Text(
-                        _statusMessage!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
+                      Text(_statusMessage!,
+                          style: TextStyle(color: Theme.of(context).colorScheme.primary)),
                     ],
                   ],
                 ),
@@ -279,18 +250,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Status',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                    Text('Status', style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
                     _StatusRow(
                       label: 'Saved location',
                       value: _office == null
                           ? 'Not set'
                           : '${_office!.latitude.toStringAsFixed(5)}, '
-                                '${_office!.longitude.toStringAsFixed(5)} '
-                                '(${_office!.radiusMeters.toInt()}m)',
+                            '${_office!.longitude.toStringAsFixed(5)} '
+                            '(${_office!.radiusMeters.toInt()}m)',
                     ),
                     _StatusRow(
                       label: 'Geofence registered',
@@ -317,10 +285,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Event log',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
+                        Text('Event log', style: Theme.of(context).textTheme.titleMedium),
                         TextButton(
                           onPressed: _log.isEmpty
                               ? null
@@ -392,33 +357,18 @@ class _LogRow extends StatelessWidget {
           const SizedBox(width: 8),
           SizedBox(
             width: 44,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
+            child: Text(label,
+                style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12)),
           ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  TimeFormat.dateTime(entry.time),
-                  style: const TextStyle(fontSize: 13),
-                ),
+                Text(TimeFormat.dateTime(entry.time), style: const TextStyle(fontSize: 13)),
                 if (coords != null)
-                  Text(
-                    coords,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  ),
+                  Text(coords, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                 if (entry.message != null)
-                  Text(
-                    entry.message!,
-                    style: const TextStyle(fontSize: 11, color: Colors.red),
-                  ),
+                  Text(entry.message!, style: const TextStyle(fontSize: 11, color: Colors.red)),
               ],
             ),
           ),
@@ -443,10 +393,7 @@ class _StatusRow extends StatelessWidget {
           Expanded(flex: 3, child: Text(label)),
           Expanded(
             flex: 4,
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
