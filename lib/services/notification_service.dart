@@ -43,24 +43,7 @@ class NotificationService {
     await _plugin.show(
       id: 1000,
       title: '🔔 Test notification',
-      body: 'This fired at ${TimeFormat.time(now)} — no geofence event needed.',
-      notificationDetails: _details(),
-    );
-  }
-
-  /// Fired the instant the background isolate wakes up for ANY geofence
-  /// event, before enter/exit logic runs. If you get this notification but
-  /// never get "Arrived"/"Left", the callback is firing fine and the bug is
-  /// in the enter/exit handling. If you never get this one either, the OS
-  /// never woke your code — that's a permission/registration problem, not
-  /// a code problem.
-  static Future<void> showDebugCallbackFired(String eventName) async {
-    await init();
-    final now = DateTime.now();
-    await _plugin.show(
-      id: 1003,
-      title: '🐛 Background callback fired',
-      body: 'Event: $eventName at ${TimeFormat.time(now)}',
+      body: 'This fired at ${TimeFormat.time(now)}.',
       notificationDetails: _details(),
     );
   }
@@ -70,7 +53,7 @@ class NotificationService {
     required DateTime checkInTime,
   }) async {
     await init();
-    final formatted = _formatTime(checkInTime);
+    final formatted = TimeFormat.time(checkInTime);
     await _plugin.show(
       id: 1001,
       title: '✅ Arrived at $officeName',
@@ -105,8 +88,6 @@ class NotificationService {
       iOS: DarwinNotificationDetails(),
     );
   }
-
-  static String _formatTime(DateTime t) => TimeFormat.time(t);
 
   static String _formatDuration(Duration d) {
     final hours = d.inHours;
