@@ -26,6 +26,25 @@ Future<void> geofenceTriggered(GeofenceCallbackParams params) async {
   WidgetsFlutterBinding.ensureInitialized();
   final storage = StorageService();
 
+  // Promote to a foreground service immediately, before anything else.
+  // On Android, some OEMs (notably Xiaomi/MIUI) restrict a killed app's
+  // process from being woken by a silent background broadcast, even with
+  // autostart/battery settings correctly granted. A foreground service is
+  // harder to block since it must show a visible ongoing notification,
+  // which standard Android protects more strongly. No-op / safely ignored
+  // on iOS and on Android versions/configs that don't need it.
+  var promoted = false;
+  try {
+    await NativeGeofenceBackgroundManager.instance.promoteToForeground();
+    promoted = true;
+  } catch (e) {
+    try {
+      await storage.appendLogEntry(
+        LogEntry(time: DateTime.now(), kind: 'error', message: 'promote: $e'),
+      );
+    } catch (_) {}
+  }
+
   try {
     final office = await storage.getOfficeLocation();
     final officeName = office?.name ?? OfficeLocation.geofenceId;
@@ -46,7 +65,11 @@ Future<void> geofenceTriggered(GeofenceCallbackParams params) async {
           );
         } catch (e) {
           await storage.appendLogEntry(
-            LogEntry(time: DateTime.now(), kind: 'error', message: 'enter-notify: $e'),
+            LogEntry(
+              time: DateTime.now(),
+              kind: 'error',
+              message: 'enter-notify: $e',
+            ),
           );
         }
         break;
@@ -58,8 +81,9 @@ Future<void> geofenceTriggered(GeofenceCallbackParams params) async {
         await storage.appendLogEntry(
           LogEntry(time: now, kind: 'exit', latitude: lat, longitude: lng),
         );
-        final duration =
-            checkIn != null ? now.difference(checkIn) : Duration.zero;
+        final duration = checkIn != null
+            ? now.difference(checkIn)
+            : Duration.zero;
         try {
           await NotificationService.showLeft(
             officeName: officeName,
@@ -67,7 +91,11 @@ Future<void> geofenceTriggered(GeofenceCallbackParams params) async {
           );
         } catch (e) {
           await storage.appendLogEntry(
-            LogEntry(time: DateTime.now(), kind: 'error', message: 'exit-notify: $e'),
+            LogEntry(
+              time: DateTime.now(),
+              kind: 'error',
+              message: 'exit-notify: $e',
+            ),
           );
         }
         break;
@@ -84,12 +112,22 @@ Future<void> geofenceTriggered(GeofenceCallbackParams params) async {
         LogEntry(
           time: DateTime.now(),
           kind: 'error',
-          message: 'callback: $e\n${stack.toString().split('\n').take(3).join(' | ')}',
+          message:
+              'callback: $e\n${stack.toString().split('\n').take(3).join(' | ')}',
         ),
       );
     } catch (_) {
       // If even writing the error entry fails (e.g. storage itself is the
       // thing that broke), there's genuinely nothing left we can do here.
+    }
+  }
+
+  if (promoted) {
+    try {
+      await NativeGeofenceBackgroundManager.instance.demoteToBackground();
+    } catch (_) {
+      // Not critical if this fails — the service will be torn down anyway
+      // once this callback function returns.
     }
   }
 }
