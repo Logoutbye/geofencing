@@ -1,0 +1,18 @@
+Add these keys inside the <dict> of ios/Runner/Info.plist (they don't exist by
+default in a fresh `flutter create` project — merge them in, don't replace the file):
+
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>We use your location once to save your office as a geofence.</string>
+
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>Background location lets us detect when you arrive at or leave the office, even when the app is closed.</string>
+
+<key>UIBackgroundModes</key>
+<array>
+  <string>location</string>
+</array>
+
+Also in ios/Podfile, make sure the platform line is:
+platform :ios, '14.0'
+
+
